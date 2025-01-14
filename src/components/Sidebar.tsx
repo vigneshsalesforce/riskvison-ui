@@ -34,7 +34,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
 
   return (
     <div 
-      className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
+      className={`bg-white border-r border-gray-200 flex flex-col fixed top-16 transition-all duration-300 ease-in-out h-[calc(100vh-64px)] ${
         collapsed ? 'w-20' : 'w-64'
       }`}
     >
