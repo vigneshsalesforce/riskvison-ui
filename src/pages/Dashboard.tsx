@@ -1,27 +1,73 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { useSpinner } from "../context/SpinnerContext";
 
-const data = [
-  { name: 'Jan', value: 400 },
-  { name: 'Feb', value: 300 },
-  { name: 'Mar', value: 600 },
-  { name: 'Apr', value: 800 },
-  { name: 'May', value: 500 },
-  { name: 'Jun', value: 700 },
-];
+type Metric = {
+  name: string;
+  value: string;
+};
 
-const metrics = [
-  { name: 'Total Accounts', value: '120' },
-  { name: 'Active Assessments', value: '25' },
-  { name: 'Pending Actions', value: '8' },
-  { name: 'Completed This Month', value: '45' },
-];
+type ChartData = {
+  name: string;
+  value: number;
+};
 
-export default function Dashboard() {
+const Dashboard = () => {
+  const { showSpinner, hideSpinner } = useSpinner();
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      showSpinner(); // Show spinner while data is being fetched
+
+      try {
+        // Simulate API delay
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        // Set dynamic data (could be fetched from an API)
+        setMetrics([
+          { name: "Total Accounts", value: "120" },
+          { name: "Active Assessments", value: "25" },
+          { name: "Pending Actions", value: "8" },
+          { name: "Completed This Month", value: "45" },
+        ]);
+
+        setChartData([
+          { name: "Jan", value: 400 },
+          { name: "Feb", value: 300 },
+          { name: "Mar", value: 600 },
+          { name: "Apr", value: 800 },
+          { name: "May", value: 500 },
+          { name: "Jun", value: 700 },
+        ]);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        hideSpinner(); // Ensure spinner is hidden after data is loaded
+      }
+    };
+
+    fetchData();
+  }, [showSpinner, hideSpinner]); // Safe dependency array with stable references
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Metrics Section */}
+      <section
+        aria-labelledby="metrics-section"
+        className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+      >
         {metrics.map((metric) => (
-          <div
+          <article
             key={metric.name}
             className="bg-white overflow-hidden shadow rounded-lg"
           >
@@ -33,17 +79,24 @@ export default function Dashboard() {
                 {metric.value}
               </dd>
             </div>
-          </div>
+          </article>
         ))}
-      </div>
+      </section>
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+      {/* Bar Chart Section */}
+      <section
+        aria-labelledby="assessment-trends-section"
+        className="bg-white shadow rounded-lg p-6"
+      >
+        <h3
+          id="assessment-trends-section"
+          className="text-lg font-medium text-gray-900 mb-4"
+        >
           Assessment Trends
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -52,7 +105,9 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
     </div>
   );
-}
+};
+
+export default Dashboard;

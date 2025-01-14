@@ -7,11 +7,13 @@ export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Navbar sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex">
         <Sidebar collapsed={sidebarCollapsed} />
-        <main className="flex-1 overflow-y-auto p-8 transition-all duration-300 ease-in-out">
+        <main className={`flex-1 p-8 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}>
           <Outlet />
         </main>
       </div>
