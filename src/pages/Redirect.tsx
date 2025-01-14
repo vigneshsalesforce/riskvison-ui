@@ -1,3 +1,4 @@
+// pages/Redirect.tsx
 import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSpinner } from "../context/SpinnerContext";
@@ -13,24 +14,20 @@ const Redirect: React.FC = () => {
     showSpinner();
 
     const token = searchParams.get("token");
-    const client = searchParams.get("client");
+      const client = searchParams.get("client");
 
     const handleAuthentication = async () => {
       try {
         if (token && client) {
-          localStorage.setItem("client", client); // Save client info
-          localStorage.setItem("isAuthenticated", "true"); // Explicitly set authentication status
-          await login(token); // Call login function (may also set `isAuthenticated`)
-          navigate("/dashboard", { replace: true }); // Redirect to dashboard
+          await login(token, client);
+          navigate("/dashboard", { replace: true });
         } else {
           console.error("Invalid token or client");
-          localStorage.removeItem("isAuthenticated"); // Ensure not authenticated
-          navigate("/login", { replace: true }); // Redirect to login
+          navigate("/login", { replace: true });
         }
       } catch (error) {
         console.error("Authentication failed: ", error);
-        localStorage.removeItem("isAuthenticated"); // Ensure not authenticated
-        navigate("/login", { replace: true }); // Redirect to login
+        navigate("/login", { replace: true });
       } finally {
         hideSpinner();
       }

@@ -1,46 +1,32 @@
-import { useState } from "react";
-import api from "../services/api";
+// hooks/useAuth.ts
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "../context/AuthContext";
+import api from "../services/api";
 
 const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const { isAuthenticated, login, logout, loading } = useAuthContext();
   const navigate = useNavigate();
 
-  const login = async (token: string) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('isAuthenticated', 'true');
-    setIsAuthenticated(true);
+  const handleLogin = async (token: string, client: string) => {
+    await login(token, client);
     navigate("/");
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem("client");
-    localStorage.removeItem('isAuthenticated');
-    setIsAuthenticated(false);
-    navigate('/login');
-  };
-
-  const getMe = async () => {
-      try {
-        const response = await api.get('/auth/me');
-        return response.data;
-      } catch (error) {
-        console.error("Error fetching current user information", error);
-        return null;
-      }
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   const initiateGoogleLogin = () => {
-     window.location.href =  `${api.defaults.baseURL}/auth/google`;
+    window.location.href = `${api.defaults.baseURL}/auth/google`;
   };
 
   return {
     isAuthenticated,
-    login,
-    logout,
-    getMe,
-    initiateGoogleLogin
+    login: handleLogin,
+    logout: handleLogout,
+    initiateGoogleLogin,
+    loading,
   };
 };
 

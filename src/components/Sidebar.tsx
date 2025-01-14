@@ -9,6 +9,7 @@ import {
   FileCheck,
   LogOut
 } from 'lucide-react';
+import useAuth  from '../hooks/useAuth';
 
 const navigation = [
   { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
@@ -26,9 +27,10 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed }: SidebarProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+    logout();
     navigate('/login');
   };
 
