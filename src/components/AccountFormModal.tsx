@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+// components/AccountFormModal.tsx
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Box, Typography, Modal, CircularProgress } from "@mui/material";
-import api from "./../services/api";
+import apiService from "./../services/api";
 import DynamicForm from "./DynamicForm";
 import ErrorHandler from "./ErrorHandler";
 import { useDispatch } from "react-redux";
 import { fetchAccounts } from "../slices/accountListSlice";
+import logger from "../utils/logger";
+import { useToast } from "./Toast";
 
 interface AccountFormModalProps {
     open: boolean;
@@ -25,67 +29,89 @@ const AccountFormModal: React.FC<AccountFormModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const objectDefinitionCache = useRef<Record<string, any | null>>({});
     const dispatch = useDispatch();
+    const { showToast } = useToast();
 
+    const fetchFormData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const definitionCacheKey = `/object/account`;
+            let definitionData = null;
+
+            if (objectDefinitionCache.current[definitionCacheKey]) {
+                definitionData = objectDefinitionCache.current[definitionCacheKey];
+            } else {
+                const definitionRes = await apiService.get(definitionCacheKey);
+                definitionData = definitionRes.data;
+                objectDefinitionCache.current[definitionCacheKey] = definitionData;
+            }
+
+
+            // Fetch account details only if editing an existing account
+            const accountRes = account?._id
+                ? await apiService.get(`/account/${account._id}/view`)
+                : { data: {} };
+
+              setFields(definitionData.fields || []);
+            setInitialValues(accountRes.data || {});
+            setError(null);
+        } catch (error: any) {
+            logger.error("Error loading form data:", error);
+            setError(error.message || "Error loading form data");
+             showToast('error', error.message || "Error loading form data", 'Error');
+        } finally {
+            setLoading(false);
+        }
+         // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[account, showToast]);
 
     useEffect(() => {
-        const fetchFormData = async () => {
-            setLoading(true);
-            try {
-                const definitionCacheKey = `/object/account`;
-                let definitionData = null;
-
-                if (objectDefinitionCache.current[definitionCacheKey]) {
-                    definitionData = objectDefinitionCache.current[definitionCacheKey];
-                } else {
-                    const definitionRes = await api.get(definitionCacheKey);
-                    definitionData = definitionRes.data.data;
-                    objectDefinitionCache.current[definitionCacheKey] = definitionData;
-                }
-
-                // Fetch account details only if editing an existing account
-                const accountRes = account?._id
-                    ? await api.get(`/account/${account._id}/view`)
-                    : { data: { data: {} } };
+        fetchFormData()
+    }, [fetchFormData]);
 
 
-                setFields(definitionData.fields || []);
-                setInitialValues(accountRes.data.data || {});
-                setError(null);
-            } catch (error: any) {
-                console.error("Error loading form data:", error);
-                setError(error.message || "Error loading form data");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchFormData();
-    }, [account]);
 
     const handleSave = async (data: Record<string, any>) => {
         setLoading(true);
         try {
             let response;
             if (account?._id) {
-                response = await api.put(`/account/${account._id}/update`, data);
+                response = await apiService.put(`/account/${account._id}/update`, data);
             } else {
-                response = await api.post(`/account/create`, data);
+                response = await apiService.post(`/account/create`, data);
             }
-            onSaved(response.data.data);
+            onSaved(response.data);
+             showToast('success', 'Account Saved successfully', 'Success');
             setError(null);
         } catch (error: any) {
-            console.error("Error saving account:", error);
+            logger.error("Error saving account:", error);
+               showToast('error', error.message || "Error saving account", 'Error');
             setError(error.message || "Error saving account");
         } finally {
             setLoading(false);
             onClose();
-        dispatch(fetchAccounts({page: 1, search:""})); // Dispatch fetchAccounts after save
+             dispatch(fetchAccounts({page: 1, search:""}));
         }
     };
+
+
+    const handleLookupData =  useCallback(async (objectName: string, searchTerm?: string) => {
+        try{
+              const response = await apiService.get(`/${objectName}/list`, {
+                  params:{ search: searchTerm}
+               });
+               return response.data.data;
+        } catch(e:any){
+            logger.error("Error fetching lookup data", e);
+            showToast('error', e.message || "Error fetching lookup data", 'Error');
+          return [];
+        }
+         // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[showToast]);
 
     const handleCloseError = () => {
         setError(null);
     };
+
 
     return (
         <Modal open={open} onClose={onClose}>
@@ -117,7 +143,8 @@ const AccountFormModal: React.FC<AccountFormModalProps> = ({
                         fields={fields}
                         initialValues={initialValues}
                         onSubmit={handleSave}
-                        onCancel={onClose}
+                       onCancel={onClose}
+                       onLookupData={handleLookupData}
                     />
                 )}
             </Box>

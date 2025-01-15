@@ -1,12 +1,22 @@
+// pages/Login.tsx
 import React from "react";
 import useAuth from "../hooks/useAuth";
+import apiService from "../services/api";
+import logger from "../utils/logger";
+import { useToast } from "../components/Toast";
 
 const Login: React.FC = () => {
     const { initiateGoogleLogin } = useAuth();
+     const { showToast } = useToast();
 
     const handleGoogleLogin = () => {
         // Initiate Google OAuth flow via backend redirect
-        initiateGoogleLogin();
+        try{
+            initiateGoogleLogin();
+        } catch (e:any) {
+            logger.error("Error initiating google login", e);
+            showToast('error', e.message || "Error initiating google login", 'Error')
+        }
     };
 
     return (

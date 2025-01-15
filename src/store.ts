@@ -1,10 +1,10 @@
 // src/store.ts
 import { configureStore } from '@reduxjs/toolkit';
 import accountListReducer from './slices/accountListSlice';
-
+import { slice as accountSlice} from './slices/entityListSlice'
 const store = configureStore({
     reducer: {
-        accountList: accountListReducer,
+        accounts: accountListReducer,
     },
 });
 

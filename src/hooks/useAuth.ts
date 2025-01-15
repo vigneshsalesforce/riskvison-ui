@@ -1,15 +1,24 @@
 // hooks/useAuth.ts
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../context/AuthContext";
-import api from "../services/api";
+import logger from "../utils/logger";
+import { useToast } from "../components/Toast";
 
 const useAuth = () => {
   const { isAuthenticated, login, logout, loading } = useAuthContext();
   const navigate = useNavigate();
+    const { showToast } = useToast();
+
 
   const handleLogin = async (token: string, client: string) => {
-    await login(token, client);
-    navigate("/");
+      try{
+          await login(token, client);
+          navigate("/");
+      } catch (e: any) {
+           logger.error("Error in login", e)
+           showToast('error', e.message || "Error in login", 'Error');
+      }
+
   };
 
   const handleLogout = () => {
@@ -17,9 +26,28 @@ const useAuth = () => {
     navigate("/login");
   };
 
-  const initiateGoogleLogin = () => {
-    window.location.href = `${api.defaults.baseURL}/auth/google`;
-  };
+
+    const initiateGoogleLogin = () => {
+        try {
+          const baseURL = getBaseUrl();
+            window.location.href = `${baseURL}/auth/google`;
+        }
+        catch (e:any) {
+           logger.error("Error initiating google login", e);
+             showToast('error', e.message || "Error initiating google login", 'Error')
+        }
+
+    };
+
+    const getBaseUrl = (): string => {
+        const tenant = localStorage.getItem("client");
+        if (tenant) {
+            return import.meta.env.VITE_WILDCARD_API_BASE_URL.replace("*", tenant);
+        }
+        return import.meta.env.VITE_API_BASE_URL;
+    };
+
+
 
   return {
     isAuthenticated,

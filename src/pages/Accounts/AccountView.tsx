@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+// pages/Accounts/AccountView.tsx
+
+import React, {  useState } from "react";
 import {
     Box,
     Typography,
@@ -12,9 +14,10 @@ import {
     Link,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../services/api";
 import AccountFormModal from "../../components/AccountFormModal";
 import ErrorHandler from "../../components/ErrorHandler";
+import useEntityData from "../../hooks/useEntityData";
+
 
 interface Field {
     name: string;
@@ -31,165 +34,66 @@ interface Field {
     };
 }
 
-interface ObjectDefinition {
-    name: string;
-    label: string;
-    fields: Field[];
-}
+
 
 const AccountView: React.FC = () => {
     const { accountId } = useParams<{ accountId: string }>();
     const navigate = useNavigate();
 
-    const [account, setAccount] = useState<Record<string, any> | null>(null);
-    const [objectDefinition, setObjectDefinition] = useState<ObjectDefinition | null>(null);
-    const [loading, setLoading] = useState(false);
+
+    const {
+        entity: account,
+        objectDefinition,
+        loading,
+        error,
+        clearError,
+        lookupValues,
+    } = useEntityData<{_id:string, Name: string, Type: string}>({
+          objectName: "account",
+          entityId: accountId
+    });
+
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const objectDefinitionCache = useRef<Record<string, ObjectDefinition | null>>({});
-    const lookupDataCache = useRef<Record<string, any[]>>({}); // Cache for lookup data
-    const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
-
-
-
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                // Fetch Object Definition
-                const definitionCacheKey = `/object/account`;
-                let definitionData = null;
-
-                if (objectDefinitionCache.current[definitionCacheKey]) {
-                    definitionData = objectDefinitionCache.current[definitionCacheKey];
-                } else {
-                    const definitionRes = await api.get(definitionCacheKey);
-                    definitionData = definitionRes.data.data;
-                    objectDefinitionCache.current[definitionCacheKey] = definitionData;
-                }
-
-                setObjectDefinition(definitionData);
-
-                // Fetch Account Data
-                const accountRes = await api.get(`/account/${accountId}/view`);
-                setAccount(accountRes.data.data);
-                setError(null);
-
-
-            } catch (error: any) {
-                console.error("Error fetching account details:", error);
-                setError(error.message || "Error fetching account details");
-                navigate("/accounts");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [accountId, navigate]);
-
-    useEffect(() => {
-        const fetchLookups = async () => {
-          if (!account || !objectDefinition) return;
-
-
-          const lookupFields = objectDefinition.fields?.filter(
-                (field) => field.type === "lookup" && field.options?.dynamic && account[field.name]
-            ) || [];
-
-            if(lookupFields.length === 0) {
-              return;
-            }
-
-            const fetchLookupData = async (field:Field) => {
-                const { objectName, valueField } = field.options?.dynamic || {}
-              if(!objectName || !valueField) {
-                return [];
-              }
-
-                const cacheKey = `/${objectName}/list`
-
-                 if (lookupDataCache.current[cacheKey]) {
-                    return lookupDataCache.current[cacheKey];
-                  }
-
-                try {
-                    const response = await api.get(cacheKey);
-                  if(response.data && response.data.data && response.data.data.data) {
-                     lookupDataCache.current[cacheKey] = response.data.data.data;
-                     return response.data.data.data;
-
-                  }
-                    return [];
-                } catch (error:any) {
-                    console.error(`Error fetching lookup data for ${objectName}:`, error);
-                    return [];
-                }
-            };
-
-
-            const lookupResults = await Promise.all(lookupFields.map(fetchLookupData));
-
-            const updatedLookupValues: Record<string, any> = {};
-            lookupFields.forEach((field, index) => {
-              const { displayField, valueField } = field.options?.dynamic || {};
-                const lookupList = lookupResults[index] || [];
-                const currentLookupId = account[field.name];
-                if(currentLookupId && displayField) {
-                    const foundLookup = lookupList.find((item:any) => item[valueField] === currentLookupId);
-                    updatedLookupValues[field.name] = foundLookup ? foundLookup[displayField] : currentLookupId
-                } else {
-                    updatedLookupValues[field.name] = currentLookupId;
-                }
-            });
-            setLookupValues(updatedLookupValues);
-        };
-
-        fetchLookups();
-    }, [account, objectDefinition]);
-
 
     const handleEdit = () => {
         setIsEditModalOpen(true);
     };
 
-    const formatFieldValue = (field: Field, value: any): React.ReactNode => {
-      if (value === null || value === undefined) return " ";
-      if (typeof value === "boolean") return value ? "Yes" : "No";
-      if (Array.isArray(value)) return value.join(", ");
+
+
+     const formatFieldValue = (field: Field, value: any): React.ReactNode => {
+        if (value === null || value === undefined) return " ";
+        if (typeof value === "boolean") return value ? "Yes" : "No";
+        if (Array.isArray(value)) return value.join(", ");
 
 
         if (field.type === "lookup" && field.options?.dynamic) {
-          const { objectName, valueField } = field.options.dynamic;
-          const lookupId = account[field.name];
+          const {  valueField } = field.options.dynamic;
+          const lookupId = account?.[field.name];
 
-            const displayValue = lookupValues[field.name] || lookupId;
-          return (
-            <Link
-              component="button"
-              onClick={() => navigate(`/accounts/${lookupId}/view`)}
-                sx={{
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    color: "primary.main"
-                }}
-            >
-              {displayValue}
-            </Link>
-          );
+          const displayValue = lookupValues[field.name] || lookupId;
+            return (
+                <Link
+                    component="button"
+                    onClick={() => navigate(`/accounts/${lookupId}/view`)}
+                    sx={{
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                        color: "primary.main"
+                    }}
+                >
+                    {displayValue}
+                </Link>
+            );
         }
 
       return String(value);
     };
 
-
-    const handleCloseError = () => {
-        setError(null);
-    };
-
     const handleSave = (updatedAccount: Record<string, any>) => {
-        setAccount(updatedAccount);
         setIsEditModalOpen(false);
+         // setAccount(updatedAccount);
     };
 
 
@@ -249,7 +153,7 @@ const AccountView: React.FC = () => {
                     Edit Account
                 </Button>
             </Box>
-            <ErrorHandler message={error || ""} open={!!error} onClose={handleCloseError}/>
+             <ErrorHandler message={error || ""} open={!!error} onClose={clearError}/>
 
             {/* Account Details */}
             <Card elevation={2}>
