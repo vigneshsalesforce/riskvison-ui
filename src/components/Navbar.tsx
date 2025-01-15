@@ -19,7 +19,7 @@ export default function Navbar({ sidebarCollapsed, onToggleSidebar }: NavbarProp
             </button>
             <div className="flex-shrink-0 flex items-center ml-4">
               <span className="text-xl font-bold text-gray-900 transition-all duration-300">
-                RiskVision
+                Risk Vision
               </span>
             </div>
           </div>

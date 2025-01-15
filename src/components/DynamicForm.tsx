@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -13,6 +13,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import api from "../services/api";
+import ErrorHandler from "./ErrorHandler";
 
 interface Field {
   name: string;
@@ -54,36 +55,80 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   const [formData, setFormData] = useState<Record<string, any>>(initialValues);
   const [dynamicOptions, setDynamicOptions] = useState<Record<string, any[]>>({});
   const [loadingLookups, setLoadingLookups] = useState<Record<string, boolean>>({});
+    const [lookupErrors, setLookupErrors] = useState<Record<string, string | null>>({});
+    const cache = useRef<Record<string, any>>({});
+    const [loadingAllLookups, setLoadingAllLookups] = useState(false);
 
-  useEffect(() => {
-    fields.forEach((field) => {
-      if (field.type === "lookup" && field.options?.dynamic) {
-        fetchDynamicOptions(field.name, field.options.dynamic);
-      }
-    });
-  }, [fields]);
 
-  const fetchDynamicOptions = async (
-    fieldName: string,
-    dynamicOptions: { objectName: string; displayField: string; valueField: string }
-  ) => {
-    setLoadingLookups((prev) => ({ ...prev, [fieldName]: true }));
-    try {
-      const response = await api.get(`/${dynamicOptions.objectName}/list`);
-      console.log(`Fetched dynamic options for ${fieldName}:`, response.data);
-      setDynamicOptions((prev) => ({
-        ...prev,
-        [fieldName]: response.data.data.data.map((item: any) => ({
-          label: item[dynamicOptions.displayField],
-          value: item[dynamicOptions.valueField],
-        })),
-      }));
-    } catch (error) {
-      console.error(`Error fetching dynamic options for ${fieldName}:`, error);
-    } finally {
-      setLoadingLookups((prev) => ({ ...prev, [fieldName]: false }));
-    }
-  };
+    useEffect(() => {
+        const lookupFields = fields.filter(
+            (field) => field.type === "lookup" && field.options?.dynamic
+        );
+
+        if (lookupFields.length > 0) {
+            fetchMultipleDynamicOptions(lookupFields);
+        }
+    }, [fields]);
+
+    const handleCloseError = (fieldName: string) => {
+        setLookupErrors(prev => ({ ...prev, [fieldName]: null }));
+    };
+
+
+    const fetchMultipleDynamicOptions = async (lookupFields: Field[]) => {
+        setLoadingAllLookups(true);
+        try {
+            const apiCalls = lookupFields.map((field) => {
+                const { objectName, displayField, valueField } = field.options?.dynamic as any;
+                const cacheKey = `/${objectName}/list`;
+                if (cache.current[cacheKey]) {
+                    return Promise.resolve({data: {data: {data: cache.current[cacheKey]}}})
+                }
+                return api.get(cacheKey)
+            });
+
+
+            const responses = await Promise.all(apiCalls);
+
+            responses.forEach((response, index) => {
+                const field = lookupFields[index];
+                const { objectName, displayField, valueField } = field.options?.dynamic as any;
+                const cacheKey = `/${objectName}/list`;
+
+                if (response.data && response.data.data && response.data.data.data) {
+                    console.log(response.data.data.data)
+                    const options = response.data.data.data.map((item: any) => ({
+                        label: item[displayField],
+                        value: item[valueField],
+                    }));
+                    cache.current[cacheKey] = options;
+                    setDynamicOptions((prev) => ({
+                        ...prev,
+                        [field.name]: options
+                    }))
+                }
+            })
+
+            setLookupErrors((prev) =>
+                lookupFields.reduce((acc, field) => {
+                    acc[field.name] = null;
+                    return acc;
+                }, {} as Record<string, null>)
+            );
+        } catch (error:any) {
+            console.error("Error fetching multiple dynamic options", error);
+            setLookupErrors((prev) =>
+                lookupFields.reduce((acc, field) => {
+                    acc[field.name] = error.message || `Error fetching dynamic options for ${field.name}`;
+                    return acc;
+                }, {} as Record<string, string>)
+            );
+        } finally {
+            setLoadingAllLookups(false);
+        }
+    };
+
+
 
   const handleChange = (name: string, value: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -98,7 +143,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
     <form onSubmit={handleSubmit}>
       <Grid container spacing={3}>
         {fields
-          .filter((field) => !field.isHidden) // Filter out hidden fields
+          .filter((field) => !field.isHidden)
           .map((field) => (
             <Grid item xs={12} md={6} key={field.name}>
               {field.type === "text" && (
@@ -150,20 +195,20 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 />
               )}
 
-              {field.type === "file" && (
-                <Button
-                  variant="outlined"
-                  component="label"
-                  fullWidth
-                >
-                  Upload {field.label}
-                  <input
-                    type="file"
-                    hidden
-                    onChange={(e) => handleChange(field.name, e.target.files?.[0])}
-                  />
-                </Button>
-              )}
+                {field.type === "file" && (
+                    <Button
+                        variant="outlined"
+                        component="label"
+                        fullWidth
+                    >
+                        Upload {field.label}
+                        <input
+                            type="file"
+                            hidden
+                            onChange={(e) => handleChange(field.name, e.target.files?.[0])}
+                        />
+                    </Button>
+                )}
 
               {field.type === "currency" && (
                 <TextField
@@ -266,25 +311,26 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 />
               )}
 
-{field.type === "lookup" && field.options?.dynamic && (
-              <FormControl fullWidth>
-                <InputLabel>{field.label}</InputLabel>
-                {loadingLookups[field.name] ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  <Select
-                    value={formData[field.name] || ""}
-                    onChange={(e) => handleChange(field.name, e.target.value)}
-                  >
-                    {dynamicOptions[field.name]?.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-              </FormControl>
-            )}
+              {field.type === "lookup" && field.options?.dynamic && (
+                <FormControl fullWidth>
+                  <InputLabel>{field.label}</InputLabel>
+                    <ErrorHandler message={lookupErrors[field.name] || ""} open={!!lookupErrors[field.name]} onClose={() => handleCloseError(field.name)} />
+                  {loadingAllLookups ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    <Select
+                      value={formData[field.name]}
+                      onChange={(e) => handleChange(field.name, e.target.value)}
+                    >
+                      {dynamicOptions[field.name]?.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                </FormControl>
+              )}
             </Grid>
           ))}
       </Grid>
