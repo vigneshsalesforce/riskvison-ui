@@ -1,3 +1,4 @@
+// src/components/generic/DynamicForm.tsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
@@ -11,50 +12,37 @@ import {
   InputLabel,
   FormControl,
   CircularProgress,
+    FormHelperText,
 } from "@mui/material";
+import { useForm, Controller } from 'react-hook-form';
 import api from "../services/api";
-import ErrorHandler from "./ErrorHandler";
+import { logger } from "../utils/logger";
+import {Field} from './../types';
+import Toast from '../components/common/Toast';
+import { useNavigate } from 'react-router-dom';
 
-interface Field {
-  name: string;
-  label: string;
-  type: string;
-  required: boolean;
-  options?: {
-    static?: string[];
-    dynamic?: {
-      objectName: string;
-      displayField: string;
-      valueField: string;
-    };
-  };
-  validation?: {
-    pattern?: string;
-    minLength?: number;
-    maxLength?: number;
-    min?: number;
-    max?: number;
-  };
-  isHidden?: boolean;
-  isReadOnly?: boolean;
-}
 
 interface DynamicFormProps {
   fields: Field[];
   initialValues?: Record<string, any>;
   onSubmit: (data: Record<string, any>) => void;
   onCancel: () => void;
+  objectName?: string;
 }
 
 const DynamicForm: React.FC<DynamicFormProps> = ({
-  fields,
-  initialValues = {},
-  onSubmit,
-  onCancel,
+    fields,
+    initialValues = {},
+    onSubmit,
+    onCancel,
+    objectName
 }) => {
-  const [formData, setFormData] = useState<Record<string, any>>(initialValues);
-  const [dynamicOptions, setDynamicOptions] = useState<Record<string, any[]>>({});
-  const [loadingLookups, setLoadingLookups] = useState<Record<string, boolean>>({});
+    const { handleSubmit, control, setValue, getValues, formState: { errors } } = useForm({
+        defaultValues: initialValues
+    });
+     const navigate = useNavigate();
+    const [dynamicOptions, setDynamicOptions] = useState<Record<string, any[]>>({});
+    const [loadingLookups, setLoadingLookups] = useState<Record<string, boolean>>({});
     const [lookupErrors, setLookupErrors] = useState<Record<string, string | null>>({});
     const cache = useRef<Record<string, any>>({});
     const [loadingAllLookups, setLoadingAllLookups] = useState(false);
@@ -64,11 +52,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         const lookupFields = fields.filter(
             (field) => field.type === "lookup" && field.options?.dynamic
         );
-
         if (lookupFields.length > 0) {
             fetchMultipleDynamicOptions(lookupFields);
         }
     }, [fields]);
+
 
     const handleCloseError = (fieldName: string) => {
         setLookupErrors(prev => ({ ...prev, [fieldName]: null }));
@@ -82,11 +70,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 const { objectName, displayField, valueField } = field.options?.dynamic as any;
                 const cacheKey = `/${objectName}/list`;
                 if (cache.current[cacheKey]) {
-                    return Promise.resolve({data: {data: {data: cache.current[cacheKey]}}})
+                   return Promise.resolve({data: {data: {data: cache.current[cacheKey]}}})
                 }
                 return api.get(cacheKey)
             });
-
 
             const responses = await Promise.all(apiCalls);
 
@@ -96,18 +83,25 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 const cacheKey = `/${objectName}/list`;
 
                 if (response.data && response.data.data && response.data.data.data) {
-                    console.log(response.data.data.data)
                     const options = response.data.data.data.map((item: any) => ({
                         label: item[displayField],
                         value: item[valueField],
                     }));
-                    cache.current[cacheKey] = options;
+                   cache.current[cacheKey] = options;
                     setDynamicOptions((prev) => ({
                         ...prev,
                         [field.name]: options
                     }))
+                     const lookupValue = getValues(field.name);
+                        if (lookupValue) {
+                             const foundLookup = options.find((item:any) => item.value === lookupValue);
+                              if(foundLookup) {
+                                  setValue(field.name, foundLookup.value)
+                             }
+                        }
                 }
             })
+
 
             setLookupErrors((prev) =>
                 lookupFields.reduce((acc, field) => {
@@ -116,7 +110,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
                 }, {} as Record<string, null>)
             );
         } catch (error:any) {
-            console.error("Error fetching multiple dynamic options", error);
+            logger.error("Error fetching multiple dynamic options", error)
             setLookupErrors((prev) =>
                 lookupFields.reduce((acc, field) => {
                     acc[field.name] = error.message || `Error fetching dynamic options for ${field.name}`;
@@ -128,222 +122,331 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
         }
     };
 
+    const onSubmitHandler = (data:any) => {
+      onSubmit(data)
+    }
+    const handleCancel = () => {
+      if(onCancel) {
+        onCancel();
+         if(objectName) {
+            navigate(`/${objectName}s`);
+         }
+      }
+    }
+    return (
+        <form onSubmit={handleSubmit(onSubmitHandler)}>
+            <Grid container spacing={3}>
+                {fields
+                    .filter((field) => !field.isHidden)
+                    .map((field) => (
+                        <Grid item xs={12} md={6} key={field.name}>
+                            {field.type === "text" && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                     <TextField
+                                        fullWidth
+                                        label={field.label}
+                                        required={field.required}
+                                        value={value || ""}
+                                        onChange={onChange}
+                                        inputProps={{
+                                            readOnly: field.isReadOnly || false,
+                                            pattern: field.validation?.pattern,
+                                            minLength: field.validation?.minLength,
+                                            maxLength: field.validation?.maxLength,
+                                        }}
+                                         error={!!error}
+                                          helperText={error ? error.message : undefined}
+                                      />
+                                    )}
+                                />
+
+                            )}
+
+                             {field.type === "email" && (
+                                 <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                <TextField
+                                  fullWidth
+                                  label={field.label}
+                                  required={field.required}
+                                    type="email"
+                                    value={value || ""}
+                                  onChange={onChange}
+                                  error={!!error}
+                                   helperText={error ? error.message : undefined}
+                                />
+                                    )}
+                                />
+                            )}
 
 
-  const handleChange = (name: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+                            {field.type === "url" && (
+                                 <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                <TextField
+                                  fullWidth
+                                  label={field.label}
+                                  required={field.required}
+                                    type="url"
+                                     value={value || ""}
+                                  onChange={onChange}
+                                   error={!!error}
+                                   helperText={error ? error.message : undefined}
+                                />
+                                    )}
+                                />
+                            )}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <Grid container spacing={3}>
-        {fields
-          .filter((field) => !field.isHidden)
-          .map((field) => (
-            <Grid item xs={12} md={6} key={field.name}>
-              {field.type === "text" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  inputProps={{
-                    readOnly: field.isReadOnly || false,
-                    pattern: field.validation?.pattern,
-                    minLength: field.validation?.minLength,
-                    maxLength: field.validation?.maxLength,
-                  }}
-                />
-              )}
+                            {field.type === "phone" && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                        <TextField
+                                          fullWidth
+                                          label={field.label}
+                                          required={field.required}
+                                            type="tel"
+                                            value={value || ""}
+                                          onChange={onChange}
+                                         error={!!error}
+                                            helperText={error ? error.message : undefined}
+                                        />
+                                    )}
+                                />
+                            )}
 
-              {field.type === "email" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  type="email"
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
 
-              {field.type === "url" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  type="url"
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
+                            {field.type === "file" && (
+                                <Button
+                                    variant="outlined"
+                                    component="label"
+                                    fullWidth
+                                >
+                                    Upload {field.label}
+                                    <Controller
+                                        name={field.name}
+                                        control={control}
+                                        render={({ field: { value, onChange } }) => (
+                                            <input
+                                                type="file"
+                                                hidden
+                                                onChange={(e) => onChange(e.target.files?.[0])}
+                                            />
+                                        )}
+                                    />
+                                </Button>
+                            )}
 
-              {field.type === "phone" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  type="tel"
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
+                            {field.type === "currency" && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                        <TextField
+                                            fullWidth
+                                            label={field.label}
+                                            required={field.required}
+                                            type="number"
+                                            value={value || ""}
+                                            onChange={(e) => onChange(parseFloat(e.target.value) || "")}
+                                             error={!!error}
+                                          helperText={error ? error.message : undefined}
+                                            inputProps={{ min: 0, step: "0.01" }}
+                                        />
+                                    )}
+                                />
+                            )}
 
-                {field.type === "file" && (
-                    <Button
-                        variant="outlined"
-                        component="label"
-                        fullWidth
-                    >
-                        Upload {field.label}
-                        <input
-                            type="file"
-                            hidden
-                            onChange={(e) => handleChange(field.name, e.target.files?.[0])}
-                        />
-                    </Button>
-                )}
+                            {field.type === "number" && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                        <TextField
+                                            fullWidth
+                                            label={field.label}
+                                            required={field.required}
+                                            type="number"
+                                            value={value || ""}
+                                            onChange={(e) => onChange(parseFloat(e.target.value) || "")}
+                                               error={!!error}
+                                              helperText={error ? error.message : undefined}
+                                        />
+                                    )}
+                                />
+                            )}
 
-              {field.type === "currency" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  type="number"
-                  onChange={(e) => handleChange(field.name, parseFloat(e.target.value) || "")}
-                  inputProps={{ min: 0, step: "0.01" }}
-                />
-              )}
+                            {field.type === "date" && (
+                                <Controller
+                                  name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                        <TextField
+                                          fullWidth
+                                            label={field.label}
+                                            required={field.required}
+                                            type="date"
+                                            InputLabelProps={{ shrink: true }}
+                                            onChange={onChange}
+                                              error={!!error}
+                                               helperText={error ? error.message : undefined}
+                                            value={value || ''}
+                                        />
+                                    )}
+                                />
 
-              {field.type === "number" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  type="number"
-                  onChange={(e) => handleChange(field.name, parseFloat(e.target.value) || "")}
-                />
-              )}
+                            )}
 
-              {field.type === "date" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  type="date"
-                  value={formData[field.name] || ""}
-                  InputLabelProps={{ shrink: true }}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
+                            {field.type === "datetime" && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                    <TextField
+                                      fullWidth
+                                        label={field.label}
+                                        required={field.required}
+                                        type="datetime-local"
+                                        InputLabelProps={{ shrink: true }}
+                                        onChange={onChange}
+                                          error={!!error}
+                                           helperText={error ? error.message : undefined}
+                                        value={value || ''}
+                                    />
+                                    )}
+                                />
+                            )}
 
-              {field.type === "datetime" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  type="datetime-local"
-                  value={formData[field.name] || ""}
-                  InputLabelProps={{ shrink: true }}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
+                            {field.type === "time" && (
+                                <Controller
+                                  name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                        <TextField
+                                            fullWidth
+                                            label={field.label}
+                                            required={field.required}
+                                            type="time"
+                                            InputLabelProps={{ shrink: true }}
+                                            onChange={onChange}
+                                             error={!!error}
+                                              helperText={error ? error.message : undefined}
+                                            value={value || ''}
+                                        />
+                                  )}
+                                />
+                            )}
 
-              {field.type === "time" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  type="time"
-                  value={formData[field.name] || ""}
-                  InputLabelProps={{ shrink: true }}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
+                           {field.type === "dropdown" && field.options?.static && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                        <FormControl fullWidth>
+                                            <InputLabel>{field.label}</InputLabel>
+                                            <Select
+                                              value={value || ""}
+                                              onChange={onChange}
+                                               error={!!error}
+                                             renderValue={(selected) => selected}
+                                               helperText={error ? error.message : undefined}
+                                            >
+                                                {field.options.static?.map((option) => (
+                                                    <MenuItem key={option} value={option}>
+                                                        {option}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                            {error &&  <FormHelperText error>{error.message}</FormHelperText>}
+                                        </FormControl>
+                                    )}
+                                />
+                            )}
 
-              {field.type === "dropdown" && field.options?.static && (
-                <FormControl fullWidth>
-                  <InputLabel>{field.label}</InputLabel>
-                  <Select
-                    value={formData[field.name] || ""}
-                    onChange={(e) => handleChange(field.name, e.target.value)}
-                  >
-                    {field.options.static.map((option) => (
-                      <MenuItem key={option} value={option}>
-                        {option}
-                      </MenuItem>
+                           {field.type === "checkbox" && (
+                                  <Controller
+                                  name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange } }) => (
+                                        <FormControlLabel
+                                          control={
+                                            <Checkbox
+                                              checked={!!value}
+                                              onChange={(e) => onChange(e.target.checked)}
+                                            />
+                                          }
+                                          label={field.label}
+                                        />
+                                    )}
+                                />
+                            )}
+                            {field.type === "textarea" && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                <TextField
+                                  fullWidth
+                                    label={field.label}
+                                    required={field.required}
+                                  value={value || ""}
+                                  multiline
+                                  rows={4}
+                                    onChange={onChange}
+                                   error={!!error}
+                                    helperText={error ? error.message : undefined}
+                                />
+                                    )}
+                                />
+                            )}
+                            {field.type === "lookup" && field.options?.dynamic && (
+                                <Controller
+                                    name={field.name}
+                                    control={control}
+                                    render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                       <FormControl fullWidth>
+                                          <InputLabel>{field.label}</InputLabel>
+                                           {lookupErrors[field.name] &&  <Toast type="error" message={lookupErrors[field.name] || ""} id={field.name} />}
+                                          {loadingAllLookups ? (
+                                            <CircularProgress size={24} />
+                                          ) : (
+                                            <Select
+                                                value={value || ""}
+                                                onChange={onChange}
+                                            >
+                                                {dynamicOptions[field.name]?.map((option) => (
+                                                    <MenuItem key={option.value} value={option.value}>
+                                                      {option.label}
+                                                    </MenuItem>
+                                                ))}
+                                             </Select>
+                                          )}
+                                       </FormControl>
+                                     )}
+                                />
+                            )}
+                        </Grid>
                     ))}
-                  </Select>
-                </FormControl>
-              )}
-
-              {field.type === "checkbox" && (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={!!formData[field.name]}
-                      onChange={(e) =>
-                        handleChange(field.name, e.target.checked)
-                      }
-                    />
-                  }
-                  label={field.label}
-                />
-              )}
-
-              {field.type === "textarea" && (
-                <TextField
-                  fullWidth
-                  label={field.label}
-                  required={field.required}
-                  value={formData[field.name] || ""}
-                  multiline
-                  rows={4}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
-
-              {field.type === "lookup" && field.options?.dynamic && (
-                <FormControl fullWidth>
-                  <InputLabel>{field.label}</InputLabel>
-                    <ErrorHandler message={lookupErrors[field.name] || ""} open={!!lookupErrors[field.name]} onClose={() => handleCloseError(field.name)} />
-                  {loadingAllLookups ? (
-                    <CircularProgress size={24} />
-                  ) : (
-                    <Select
-                      value={formData[field.name]}
-                      onChange={(e) => handleChange(field.name, e.target.value)}
-                    >
-                      {dynamicOptions[field.name]?.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
-                </FormControl>
-              )}
             </Grid>
-          ))}
-      </Grid>
-      <Box mt={3} display="flex" justifyContent="flex-end">
-        <Button variant="outlined" onClick={onCancel} sx={{ mr: 2 }}>
-          Cancel
-        </Button>
-        <Button type="submit" variant="contained" color="primary">
-          Save
-        </Button>
-      </Box>
-    </form>
-  );
+            <Box mt={3} display="flex" justifyContent="flex-end">
+                <Button variant="outlined" onClick={handleCancel} sx={{ mr: 2 }}>
+                    Cancel
+                </Button>
+                <Button type="submit" variant="contained" color="primary">
+                    Save
+                </Button>
+            </Box>
+        </form>
+    );
 };
 
 export default DynamicForm;

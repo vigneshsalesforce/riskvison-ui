@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+// src/context/SpinnerContext.tsx
+import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import Spinner from "../components/Spinner";
 
 interface SpinnerContextType {
@@ -8,7 +9,11 @@ interface SpinnerContextType {
 
 const SpinnerContext = createContext<SpinnerContextType | undefined>(undefined);
 
-export const SpinnerProvider: React.FC<{ children: React.ReactNode }> = ({
+interface SpinnerProviderProps {
+    children: ReactNode;
+}
+
+export const SpinnerProvider: React.FC<SpinnerProviderProps> = ({
   children,
 }) => {
   const [isVisible, setIsVisible] = useState(false);

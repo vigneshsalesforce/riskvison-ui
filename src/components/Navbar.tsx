@@ -1,3 +1,4 @@
+//components/Navbar.tsx
 import { Bell, Settings, Menu } from 'lucide-react';
 
 interface NavbarProps {

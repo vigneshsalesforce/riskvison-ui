@@ -1,5 +1,6 @@
-// context/AuthContext.tsx
-import React, { createContext, useState, useContext, useCallback } from "react";
+// src/context/AuthContext.tsx
+import React, { createContext, useState, useContext, useCallback, ReactNode } from "react";
+import { logger } from "../utils/logger";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -10,7 +11,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+interface AuthProviderProps {
+    children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({
   children,
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
@@ -25,8 +30,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem("client", client);
       localStorage.setItem("isAuthenticated", "true");
       setIsAuthenticated(true);
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (error:any) {
+        logger.error("Login failed: ", error)
       localStorage.removeItem("token");
       localStorage.removeItem("client");
       localStorage.removeItem("isAuthenticated");
