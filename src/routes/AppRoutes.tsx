@@ -11,11 +11,8 @@ const Login = lazy(() => import("../pages/Login"));
 const Dashboard = lazy(() => import("../pages/Dashboard"));
 
 const Contacts = lazy(() => import("../features/contact/components/ContactList"));
-
-
-
 const ViewContact = lazy(() => import("../features/contact/components/ContactView"));
-
+const ContactForm = lazy(() => import("../features/contact/components/ContactForm"));
 
 const RedirectPage = lazy(() => import("../pages/Redirect"));
 const NotFound = lazy(() => import("../pages/NotFound")); // 404 page
@@ -25,7 +22,17 @@ const ViewAccount = lazy(() => import("../features/account/components/AccountVie
 const Accounts = lazy(() => import("../features/account/components/AccountList"));
 const AccountForm = lazy(() => import("../features/account/components/AccountForm"));
 
+const ViewBuilding = lazy(() => import("../features/building/components/BuildingView"));
+const Buildings = lazy(() => import("../features/building/components/BuildingList"));
+const BuildingForm = lazy(() => import("../features/building/components/BuildingForm"));
 
+const ViewLocation = lazy(() => import("../features/location/components/LocationView"));
+const Locations = lazy(() => import("../features/location/components/LocationList"));
+const LocationForm = lazy(() => import("../features/location/components/LocationForm"));
+
+const ViewPra = lazy(() => import("../features/pra/components/PraView"));
+const PraList = lazy(() => import("../features/pra/components/PraList"));
+const PraForm = lazy(() => import("../features/pra/components/PraForm"));
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, loading } = useAuthContext();
@@ -37,12 +44,21 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-           <Route path="/accounts" element={<Accounts />} />
-            <Route path="/accounts/create" element={<AccountForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/accounts/create" element={<AccountForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
           <Route path="/account/:accountId/view" element={<ViewAccount />} />
-           <Route path="/contacts" element={<Contacts />} />
-             <Route path="/contacts/create" element={<ViewContact />} />
-          <Route path="/contacts/:contactId/view" element={<ViewContact />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/contacts/create" element={<ContactForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/contact/:contactId/view" element={<ViewContact />} />
+          <Route path="/buildings" element={<Buildings />} />
+          <Route path="/buildings/create" element={<BuildingForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/building/:buildingId/view" element={<ViewBuilding />} />
+          <Route path="/locations" element={<Locations />} />
+          <Route path="/locations/create" element={<LocationForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/location/:locationId/view" element={<ViewLocation />} />
+          <Route path="/propertyriskassessments" element={<PraList />} />
+          <Route path="/propertyriskassessments/create" element={<PraForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/propertyriskassessment/:praId/view" element={<ViewPra />} />
 
         </Route>
       </>

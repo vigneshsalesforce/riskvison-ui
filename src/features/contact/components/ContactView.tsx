@@ -3,15 +3,18 @@ import React, { useState } from 'react';
 import GenericView from '../../../components/generic/GenericView';
 import { useParams, useNavigate } from 'react-router-dom';
 import useContactApi from '../hooks/useContactApi';
-import ContactForm from './ContactForm';
-import { Box, Button } from '@mui/material';
+import ContactForm from '../components/ContactForm';
+import { Box } from '@mui/material';
+import Button from '../../../components/common/Button'
 import Toast from '../../../components/common/Toast';
+
 const ContactView: React.FC = () => {
     const { contactId } = useParams<{ contactId: string }>();
-      const navigate = useNavigate();
-    const {getContact, updateContact} = useContactApi();
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-     const {data, error} = getContact(contactId || "");
+     const navigate = useNavigate();
+     const {getContact, updateContact} = useContactApi();
+      const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+      const {data, error} = getContact(contactId || "");
+
     const handleEdit = () => {
         setIsEditModalOpen(true);
     };
@@ -19,18 +22,19 @@ const ContactView: React.FC = () => {
     const handleSave = () => {
         setIsEditModalOpen(false);
     };
-     if(error) {
-           return <Toast type="error" message="Error fetching the contact" id="error_contact"/>
+      if(error) {
+           return <Toast type="error" message="Error fetching the Contact" id="error_contact"/>
       }
+
     return (
         <Box>
-             <Box sx={{
+           <Box sx={{
                     display: "flex",
                     justifyContent: "flex-end",
                     alignItems: "center",
                     mb: 4,
                 }}>
-               {contactId &&
+                {contactId &&
                     <Button
                       variant="contained"
                       color="primary"
@@ -41,17 +45,17 @@ const ContactView: React.FC = () => {
                     </Button>}
             </Box>
           <GenericView
-             objectName="contact"
-              objectId={contactId || ""}
+           objectName="contact"
+           objectId={contactId || ""}
           />
           {isEditModalOpen && (
-            <ContactForm
+             <ContactForm
                 open={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
-                contact={data}
+                contact={data.data.data}
                onSaved={handleSave}
-                mutation={updateContact}
-            />
+               mutation={updateContact}
+              />
           )}
         </Box>
     );

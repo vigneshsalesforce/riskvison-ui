@@ -19,7 +19,8 @@ const navigation = [
   { name: 'Buildings', to: '/buildings', icon: Building2 },
   { name: 'Locations', to: '/locations', icon: MapPin },
   { name: 'Actions', to: '/actions', icon: ClipboardList },
-  { name: 'Assessments', to: '/assessments', icon: FileCheck },
+  { name: 'Property Assessments', to: '/propertyriskassessments', icon: FileCheck },
+
 ];
 
 interface SidebarProps {

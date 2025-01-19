@@ -1,56 +1,55 @@
-// src/features/contact/components/ContactForm.tsx
+// src/features/building/components/BuildingForm.tsx
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Modal, CircularProgress } from "@mui/material";
 import DynamicForm from "../../../components/generic/DynamicForm";
 import useObjectDefinitionApi from '../../common/hooks/useObjectDefinitionApi';
 import {  useNavigate } from 'react-router-dom';
 import {logger} from '../../../utils/logger';
-import {Contact} from '../types';
-import useContactApi from '../hooks/useContactApi';
+import {Building} from '../types';
+import useBuildingApi from '../hooks/useBuildingApi';
 import Toast from '../../../components/common/Toast';
 
-interface ContactFormModalProps {
+interface BuildingFormModalProps {
     open: boolean;
     onClose: () => void;
-    contact?: Contact;
+    building?: Building;
      onSaved: () => void;
 }
 
-const ContactForm: React.FC<ContactFormModalProps> = ({
+const BuildingForm: React.FC<BuildingFormModalProps> = ({
     open,
     onClose,
-    contact,
+    building,
     onSaved,
 }) => {
     const [fields, setFields] = useState([]);
     const [initialValues, setInitialValues] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(false);
-    const { objectDefinition, isLoading, error } = useObjectDefinitionApi("contact");
+    const { objectDefinition, isLoading, error } = useObjectDefinitionApi("building");
     const navigate = useNavigate();
-    const {createContact, updateContact} = useContactApi();
+    const {createBuilding, updateBuilding} = useBuildingApi();
 
 
     useEffect(() => {
         if(objectDefinition && objectDefinition.fields) {
             setFields(objectDefinition.fields || []);
-            setInitialValues(contact || {});
+            setInitialValues(building || {});
         }
-    }, [objectDefinition, contact]);
+    }, [objectDefinition, building]);
 
 
     const handleSave = async (data: Record<string, any>) => {
         setLoading(true);
          try {
-            if (contact?._id) {
-               await updateContact.mutateAsync({id: contact._id, data});
+            if (building?._id) {
+               await updateBuilding.mutateAsync({id: building._id, data});
             } else {
-                 await createContact.mutateAsync(data);
+                 await createBuilding.mutateAsync(data);
             }
             onSaved();
         } catch (error: any) {
-          logger.error("Error saving contact:", error);
+          logger.error("Error saving building:", error);
         } finally {
-            console.log("Contact saved successfully");
             setLoading(false);
             onClose();
         }
@@ -58,7 +57,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
 
     const handleClose = () => {
         onClose();
-        navigate("/contacts");
+        navigate("/buildings");
     }
 
 
@@ -70,7 +69,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
         )
     }
     if(error) {
-     return <Toast type="error" message="Error loading form data" id="contact_form"/>
+     return <Toast type="error" message="Error loading form data" id="building_form"/>
    }
 
     return (
@@ -91,7 +90,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
                 }}
             >
                 <Typography variant="h5" mb={3}>
-                    {contact?._id ? "Edit Contact" : "Create Contact"}
+                    {building?._id ? "Edit Building" : "Create Building"}
                 </Typography>
                 {loading ? (
                     <Box display="flex" justifyContent="center" alignItems="center" height="200px">
@@ -103,7 +102,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
                         initialValues={initialValues}
                         onSubmit={handleSave}
                          onCancel={handleClose}
-                        objectName="contact"
+                        objectName="building"
                     />
                 )}
             </Box>
@@ -111,4 +110,4 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
     );
 };
 
-export default ContactForm;
+export default BuildingForm;

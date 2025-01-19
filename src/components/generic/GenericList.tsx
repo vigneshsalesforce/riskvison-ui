@@ -60,8 +60,7 @@ const GenericList = <T,>({
 
   const debouncedSearch = useDebounce(searchTerm, 500);
     const { data, isLoading, error } = fetchData({page: page, limit: 10, search: debouncedSearch, sortBy: sortBy || "createdAt", sortOrder});
-
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
@@ -120,13 +119,12 @@ const GenericList = <T,>({
             ),
           }}
         />
-      </Box>
-
+      </Box>          
       {isLoading ? (
         <Box display="flex" justifyContent="center" alignItems="center" height="300px">
           <CircularProgress />
         </Box>
-      ) :  data?.data && data?.data?.length === 0 ? (
+      ) :  !data?.data || data?.data?.length === 0 ? (
         <Box textAlign="center" py={4}>
           <Typography variant="h6" color="textSecondary">
             No records found.

@@ -1,56 +1,55 @@
-// src/features/contact/components/ContactForm.tsx
+// src/features/location/components/LocationForm.tsx
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Modal, CircularProgress } from "@mui/material";
 import DynamicForm from "../../../components/generic/DynamicForm";
 import useObjectDefinitionApi from '../../common/hooks/useObjectDefinitionApi';
 import {  useNavigate } from 'react-router-dom';
 import {logger} from '../../../utils/logger';
-import {Contact} from '../types';
-import useContactApi from '../hooks/useContactApi';
+import {Location} from '../types';
+import useLocationApi from '../hooks/useLocationApi';
 import Toast from '../../../components/common/Toast';
 
-interface ContactFormModalProps {
+interface LocationFormModalProps {
     open: boolean;
     onClose: () => void;
-    contact?: Contact;
+    location?: Location;
      onSaved: () => void;
 }
 
-const ContactForm: React.FC<ContactFormModalProps> = ({
+const LocationForm: React.FC<LocationFormModalProps> = ({
     open,
     onClose,
-    contact,
+    location,
     onSaved,
 }) => {
     const [fields, setFields] = useState([]);
     const [initialValues, setInitialValues] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(false);
-    const { objectDefinition, isLoading, error } = useObjectDefinitionApi("contact");
+    const { objectDefinition, isLoading, error } = useObjectDefinitionApi("location");
     const navigate = useNavigate();
-    const {createContact, updateContact} = useContactApi();
+    const {createLocation, updateLocation} = useLocationApi();
 
 
     useEffect(() => {
         if(objectDefinition && objectDefinition.fields) {
             setFields(objectDefinition.fields || []);
-            setInitialValues(contact || {});
+            setInitialValues(location || {});
         }
-    }, [objectDefinition, contact]);
+    }, [objectDefinition, location]);
 
 
     const handleSave = async (data: Record<string, any>) => {
         setLoading(true);
          try {
-            if (contact?._id) {
-               await updateContact.mutateAsync({id: contact._id, data});
+            if (location?._id) {
+               await updateLocation.mutateAsync({id: location._id, data});
             } else {
-                 await createContact.mutateAsync(data);
+                 await createLocation.mutateAsync(data);
             }
             onSaved();
         } catch (error: any) {
-          logger.error("Error saving contact:", error);
+          logger.error("Error saving location:", error);
         } finally {
-            console.log("Contact saved successfully");
             setLoading(false);
             onClose();
         }
@@ -58,7 +57,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
 
     const handleClose = () => {
         onClose();
-        navigate("/contacts");
+        navigate("/locations");
     }
 
 
@@ -70,7 +69,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
         )
     }
     if(error) {
-     return <Toast type="error" message="Error loading form data" id="contact_form"/>
+     return <Toast type="error" message="Error loading form data" id="location_form"/>
    }
 
     return (
@@ -91,7 +90,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
                 }}
             >
                 <Typography variant="h5" mb={3}>
-                    {contact?._id ? "Edit Contact" : "Create Contact"}
+                    {location?._id ? "Edit Location" : "Create Location"}
                 </Typography>
                 {loading ? (
                     <Box display="flex" justifyContent="center" alignItems="center" height="200px">
@@ -103,7 +102,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
                         initialValues={initialValues}
                         onSubmit={handleSave}
                          onCancel={handleClose}
-                        objectName="contact"
+                        objectName="location"
                     />
                 )}
             </Box>
@@ -111,4 +110,4 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
     );
 };
 
-export default ContactForm;
+export default LocationForm;

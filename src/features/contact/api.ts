@@ -1,6 +1,7 @@
 // src/features/contact/api.ts
 import api from '../../services/api';
 import { ContactPaginatedResponse, Contact } from './types';
+import { logger } from '../../utils/logger';
 
 const fetchContacts = async (params: { page: number, limit: number, search?: string, sortBy?: string, sortOrder?: 'asc'|'desc' }): Promise<ContactPaginatedResponse> => {
     const response = await api.get('/contact/list', {params});

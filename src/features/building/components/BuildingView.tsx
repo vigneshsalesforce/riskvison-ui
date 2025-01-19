@@ -1,19 +1,19 @@
-// src/features/account/components/AccountView.tsx
+// src/features/building/components/BuildingView.tsx
 import React, { useState } from 'react';
 import GenericView from '../../../components/generic/GenericView';
 import { useParams, useNavigate } from 'react-router-dom';
-import useAccountApi from '../hooks/useAccountApi';
-import AccountForm from '../components/AccountForm';
+import useBuildingApi from '../hooks/useBuildingApi';
+import BuildingForm from '../components/BuildingForm';
 import { Box } from '@mui/material';
 import Button from '../../../components/common/Button'
 import Toast from '../../../components/common/Toast';
 
-const AccountView: React.FC = () => {
-    const { accountId } = useParams<{ accountId: string }>();
+const BuildingView: React.FC = () => {
+    const { buildingId } = useParams<{ buildingId: string }>();
      const navigate = useNavigate();
-     const {getAccount, updateAccount} = useAccountApi();
+     const {getBuilding, updateBuilding} = useBuildingApi();
       const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-      const {data, error} = getAccount(accountId || "");
+      const {data, error} = getBuilding(buildingId || "");
 
     const handleEdit = () => {
         setIsEditModalOpen(true);
@@ -23,7 +23,7 @@ const AccountView: React.FC = () => {
         setIsEditModalOpen(false);
     };
       if(error) {
-           return <Toast type="error" message="Error fetching the Account" id="error_account"/>
+           return <Toast type="error" message="Error fetching the Building" id="error_building"/>
       }
 
     return (
@@ -34,31 +34,31 @@ const AccountView: React.FC = () => {
                     alignItems: "center",
                     mb: 4,
                 }}>
-                {accountId &&
+                {buildingId &&
                     <Button
                       variant="contained"
                       color="primary"
                       onClick={handleEdit}
                       sx={{ textTransform: "none" }}
                   >
-                      Edit Account
+                      Edit Building
                     </Button>}
             </Box>
           <GenericView
-           objectName="account"
-           objectId={accountId || ""}
+           objectName="building"
+           objectId={buildingId || ""}
           />
           {isEditModalOpen && (
-             <AccountForm
+             <BuildingForm
                 open={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
-                account={data.data.data}
+                building={data.data.data}
                onSaved={handleSave}
-               mutation={updateAccount}
+               mutation={updateBuilding}
               />
           )}
         </Box>
     );
 };
 
-export default AccountView;
+export default BuildingView;

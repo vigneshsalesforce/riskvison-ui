@@ -1,19 +1,19 @@
-// src/features/account/components/AccountView.tsx
+// src/features/location/components/LocationView.tsx
 import React, { useState } from 'react';
 import GenericView from '../../../components/generic/GenericView';
 import { useParams, useNavigate } from 'react-router-dom';
-import useAccountApi from '../hooks/useAccountApi';
-import AccountForm from '../components/AccountForm';
+import useLocationApi from '../hooks/useLocationApi';
+import LocationForm from '../components/LocationForm';
 import { Box } from '@mui/material';
 import Button from '../../../components/common/Button'
 import Toast from '../../../components/common/Toast';
 
-const AccountView: React.FC = () => {
-    const { accountId } = useParams<{ accountId: string }>();
+const LocationView: React.FC = () => {
+    const { locationId } = useParams<{ locationId: string }>();
      const navigate = useNavigate();
-     const {getAccount, updateAccount} = useAccountApi();
+     const {getLocation, updateLocation} = useLocationApi();
       const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-      const {data, error} = getAccount(accountId || "");
+      const {data, error} = getLocation(locationId || "");
 
     const handleEdit = () => {
         setIsEditModalOpen(true);
@@ -23,7 +23,7 @@ const AccountView: React.FC = () => {
         setIsEditModalOpen(false);
     };
       if(error) {
-           return <Toast type="error" message="Error fetching the Account" id="error_account"/>
+           return <Toast type="error" message="Error fetching the Location" id="error_location"/>
       }
 
     return (
@@ -34,31 +34,31 @@ const AccountView: React.FC = () => {
                     alignItems: "center",
                     mb: 4,
                 }}>
-                {accountId &&
+                {locationId &&
                     <Button
                       variant="contained"
                       color="primary"
                       onClick={handleEdit}
                       sx={{ textTransform: "none" }}
                   >
-                      Edit Account
+                      Edit Location
                     </Button>}
             </Box>
           <GenericView
-           objectName="account"
-           objectId={accountId || ""}
+           objectName="location"
+           objectId={locationId || ""}
           />
           {isEditModalOpen && (
-             <AccountForm
+             <LocationForm
                 open={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
-                account={data.data.data}
+                location={data.data.data}
                onSaved={handleSave}
-               mutation={updateAccount}
+               mutation={updateLocation}
               />
           )}
         </Box>
     );
 };
 
-export default AccountView;
+export default LocationView;

@@ -1,19 +1,19 @@
-// src/features/account/components/AccountView.tsx
+// src/features/pra/components/PraView.tsx
 import React, { useState } from 'react';
 import GenericView from '../../../components/generic/GenericView';
 import { useParams, useNavigate } from 'react-router-dom';
-import useAccountApi from '../hooks/useAccountApi';
-import AccountForm from '../components/AccountForm';
+import usePraApi from '../hooks/usePraApi';
+import PraForm from '../components/PraForm';
 import { Box } from '@mui/material';
 import Button from '../../../components/common/Button'
 import Toast from '../../../components/common/Toast';
 
-const AccountView: React.FC = () => {
-    const { accountId } = useParams<{ accountId: string }>();
+const PraView: React.FC = () => {
+    const { praId } = useParams<{ praId: string }>();
      const navigate = useNavigate();
-     const {getAccount, updateAccount} = useAccountApi();
+     const {getPropertyRiskAssessment, updatePropertyRiskAssessment} = usePraApi();
       const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-      const {data, error} = getAccount(accountId || "");
+      const {data, error} = getPropertyRiskAssessment(praId || "");
 
     const handleEdit = () => {
         setIsEditModalOpen(true);
@@ -23,7 +23,7 @@ const AccountView: React.FC = () => {
         setIsEditModalOpen(false);
     };
       if(error) {
-           return <Toast type="error" message="Error fetching the Account" id="error_account"/>
+           return <Toast type="error" message="Error fetching the Property Risk Assessment" id="error_pra"/>
       }
 
     return (
@@ -34,31 +34,31 @@ const AccountView: React.FC = () => {
                     alignItems: "center",
                     mb: 4,
                 }}>
-                {accountId &&
+                {praId &&
                     <Button
                       variant="contained"
                       color="primary"
                       onClick={handleEdit}
                       sx={{ textTransform: "none" }}
                   >
-                      Edit Account
+                      Edit Property Risk Assessment
                     </Button>}
             </Box>
           <GenericView
-           objectName="account"
-           objectId={accountId || ""}
+           objectName="propertyriskassessment"
+           objectId={praId || ""}
           />
           {isEditModalOpen && (
-             <AccountForm
+             <PraForm
                 open={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
-                account={data.data.data}
+                propertyRiskAssessment={data}
                onSaved={handleSave}
-               mutation={updateAccount}
+               mutation={updatePropertyRiskAssessment}
               />
           )}
         </Box>
     );
 };
 
-export default AccountView;
+export default PraView;
