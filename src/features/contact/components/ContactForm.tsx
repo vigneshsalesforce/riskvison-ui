@@ -53,6 +53,7 @@ const ContactForm: React.FC<ContactFormModalProps> = ({
             console.log("Contact saved successfully");
             setLoading(false);
             onClose();
+            navigate("/contacts");
         }
     };
 

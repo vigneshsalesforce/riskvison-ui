@@ -52,6 +52,7 @@ const LocationForm: React.FC<LocationFormModalProps> = ({
         } finally {
             setLoading(false);
             onClose();
+            navigate("/locations");
         }
     };
 

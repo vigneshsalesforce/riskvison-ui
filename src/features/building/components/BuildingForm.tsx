@@ -52,6 +52,7 @@ const BuildingForm: React.FC<BuildingFormModalProps> = ({
         } finally {
             setLoading(false);
             onClose();
+            navigate("/buildings");
         }
     };
 

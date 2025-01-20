@@ -51,6 +51,7 @@ const AccountForm: React.FC<AccountFormModalProps> = ({
           logger.error("Error saving account:", error);
         } finally {
             setLoading(false);
+            navigate("/accounts");
             onClose();
         }
     };
