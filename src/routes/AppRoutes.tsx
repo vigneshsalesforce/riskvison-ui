@@ -34,6 +34,11 @@ const ViewPra = lazy(() => import("../features/pra/components/PraView"));
 const PraList = lazy(() => import("../features/pra/components/PraList"));
 const PraForm = lazy(() => import("../features/pra/components/PraForm"));
 
+const Actions = lazy(() => import("../pages/Actions"));
+const Users = lazy(() => import("../pages/Users"));
+
+const UserNotify = lazy(() => import("../pages/UserNotify"));
+
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, loading } = useAuthContext();
 
@@ -59,7 +64,9 @@ const AppRoutes: React.FC = () => {
           <Route path="/propertyriskassessments" element={<PraList />} />
           <Route path="/propertyriskassessments/create" element={<PraForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
           <Route path="/propertyriskassessment/:praId/view" element={<ViewPra />} />
-
+          <Route path="/actions" element={<Actions />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/notify" element={<UserNotify />} />
         </Route>
       </>
     );
@@ -71,6 +78,7 @@ const AppRoutes: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/notify" element={<UserNotify />} />
         <Route path="/redirect" element={<RedirectPage />} />
 
         {/* Protected Routes */}
