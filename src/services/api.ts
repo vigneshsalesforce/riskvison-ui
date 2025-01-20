@@ -29,10 +29,12 @@ api.interceptors.request.use(
 
          const tenant = localStorage.getItem("client");
             if (tenant) {
-                const baseURL = import.meta.env.VITE_WILDCARD_API_BASE_URL.replace(
-                    "*",
-                    tenant
-                );
+                //TO -DO ** `Use WildCard`
+                // const baseURL = import.meta.env.VITE_WILDCARD_API_BASE_URL.replace(
+                //     "*",
+                //     tenant
+                // );
+                const baseURL = import.meta.env.VITE_API_BASE_URL;
                 config.baseURL = baseURL;
             }
 
