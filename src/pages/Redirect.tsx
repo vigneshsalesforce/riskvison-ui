@@ -1,5 +1,6 @@
+// src/pages/Redirect.tsx
 import React, { useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useSpinner } from "../context/SpinnerContext";
 import useAuth from "../hooks/useAuth";
 
@@ -7,7 +8,7 @@ const Redirect: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const { showSpinner, hideSpinner } = useSpinner();
-  const navigate = useNavigate();
+
 
   useEffect(() => {
     showSpinner();
@@ -18,19 +19,12 @@ const Redirect: React.FC = () => {
     const handleAuthentication = async () => {
       try {
         if (token && client) {
-          localStorage.setItem("client", client); // Save client info
-          localStorage.setItem("isAuthenticated", "true"); // Explicitly set authentication status
-          await login(token); // Call login function (may also set `isAuthenticated`)
-          navigate("/dashboard", { replace: true }); // Redirect to dashboard
+           await login(token, client);
         } else {
           console.error("Invalid token or client");
-          localStorage.removeItem("isAuthenticated"); // Ensure not authenticated
-          navigate("/login", { replace: true }); // Redirect to login
         }
       } catch (error) {
         console.error("Authentication failed: ", error);
-        localStorage.removeItem("isAuthenticated"); // Ensure not authenticated
-        navigate("/login", { replace: true }); // Redirect to login
       } finally {
         hideSpinner();
       }
@@ -39,7 +33,7 @@ const Redirect: React.FC = () => {
     handleAuthentication();
 
     return () => hideSpinner();
-  }, [searchParams, login, navigate, showSpinner, hideSpinner]);
+  }, [searchParams, login, showSpinner, hideSpinner]);
 
   return (
     <div className="min-h-screen flex justify-center items-center">

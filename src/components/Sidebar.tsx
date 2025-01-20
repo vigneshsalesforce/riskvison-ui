@@ -1,3 +1,4 @@
+//components/Sidebar.tsx
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,6 +10,7 @@ import {
   FileCheck,
   LogOut
 } from 'lucide-react';
+import useAuth  from '../hooks/useAuth';
 
 const navigation = [
   { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
@@ -17,7 +19,8 @@ const navigation = [
   { name: 'Buildings', to: '/buildings', icon: Building2 },
   { name: 'Locations', to: '/locations', icon: MapPin },
   { name: 'Actions', to: '/actions', icon: ClipboardList },
-  { name: 'Assessments', to: '/assessments', icon: FileCheck },
+  { name: 'Property Assessments', to: '/propertyriskassessments', icon: FileCheck },
+
 ];
 
 interface SidebarProps {
@@ -26,9 +29,10 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed }: SidebarProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+    logout();
     navigate('/login');
   };
 

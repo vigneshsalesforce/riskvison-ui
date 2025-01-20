@@ -1,56 +1,81 @@
-import React, { lazy, Suspense, useEffect } from "react";
+// src/routes/AppRoutes.tsx
+import React, { lazy, Suspense, useMemo } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import Spinner from "../components/Spinner";
+import { useAuthContext } from "../context/AuthContext";
+import Toast from "../components/common/Toast";
 
 // Lazy load pages
 const Login = lazy(() => import("../pages/Login"));
 const Dashboard = lazy(() => import("../pages/Dashboard"));
-const Contacts = lazy(() => import("../pages/Contacts"));
-const Buildings = lazy(() => import("../pages/Buildings"));
-const Locations = lazy(() => import("../pages/Locations"));
-const Actions = lazy(() => import("../pages/Actions"));
-const Assessments = lazy(() => import("../pages/Assessments"));
-const Settings = lazy(() => import("../pages/Settings"));
+
+const Contacts = lazy(() => import("../features/contact/components/ContactList"));
+const ViewContact = lazy(() => import("../features/contact/components/ContactView"));
+const ContactForm = lazy(() => import("../features/contact/components/ContactForm"));
+
 const RedirectPage = lazy(() => import("../pages/Redirect"));
 const NotFound = lazy(() => import("../pages/NotFound")); // 404 page
 
-const ViewAccount = lazy(() => import("../pages/Accounts/AccountView"));
-const Accounts = lazy(() => import("../pages/Accounts/AccountsList"));
 
+const ViewAccount = lazy(() => import("../features/account/components/AccountView"));
+const Accounts = lazy(() => import("../features/account/components/AccountList"));
+const AccountForm = lazy(() => import("../features/account/components/AccountForm"));
 
-const isAuthenticated = () => {
-    const token = localStorage.getItem("token");
-    const client = localStorage.getItem("client");
-    return token && client && localStorage.getItem("isAuthenticated") === "true";
-  };
-  
+const ViewBuilding = lazy(() => import("../features/building/components/BuildingView"));
+const Buildings = lazy(() => import("../features/building/components/BuildingList"));
+const BuildingForm = lazy(() => import("../features/building/components/BuildingForm"));
+
+const ViewLocation = lazy(() => import("../features/location/components/LocationView"));
+const Locations = lazy(() => import("../features/location/components/LocationList"));
+const LocationForm = lazy(() => import("../features/location/components/LocationForm"));
+
+const ViewPra = lazy(() => import("../features/pra/components/PraView"));
+const PraList = lazy(() => import("../features/pra/components/PraList"));
+const PraForm = lazy(() => import("../features/pra/components/PraForm"));
 
 const AppRoutes: React.FC = () => {
+  const { isAuthenticated, loading } = useAuthContext();
+
+  const authenticatedRoutes = useMemo(() => {
+    if (loading) return <Spinner />;
+    return (
+      <>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/accounts/create" element={<AccountForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/account/:accountId/view" element={<ViewAccount />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/contacts/create" element={<ContactForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/contact/:contactId/view" element={<ViewContact />} />
+          <Route path="/buildings" element={<Buildings />} />
+          <Route path="/buildings/create" element={<BuildingForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/building/:buildingId/view" element={<ViewBuilding />} />
+          <Route path="/locations" element={<Locations />} />
+          <Route path="/locations/create" element={<LocationForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/location/:locationId/view" element={<ViewLocation />} />
+          <Route path="/propertyriskassessments" element={<PraList />} />
+          <Route path="/propertyriskassessments/create" element={<PraForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/propertyriskassessment/:praId/view" element={<ViewPra />} />
+
+        </Route>
+      </>
+    );
+  }, [isAuthenticated, loading]);
 
   return (
-    <Suspense  fallback={<Spinner />}>
+    <Suspense fallback={<Spinner />}>
+      <Toast />
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/redirect" element={<RedirectPage />} />
 
         {/* Protected Routes */}
-        {isAuthenticated() ? (
-          <>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/accounts" element={<Accounts />} />
-                <Route path="/accounts/:accountId/view" element={<ViewAccount />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/buildings" element={<Buildings />} />
-              <Route path="/locations" element={<Locations />} />
-              <Route path="/actions" element={<Actions />} />
-              <Route path="/assessments" element={<Assessments />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-          </>
+        {isAuthenticated ? (
+          authenticatedRoutes
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
