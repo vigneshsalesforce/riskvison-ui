@@ -5,12 +5,7 @@ import { logger } from '../../utils/logger';
 
 const fetchPropertyRiskAssessments = async (params: { page: number, limit: number, search?: string, sortBy?: string, sortOrder?: 'asc'|'desc' }): Promise<PropertyRiskAssessmentPaginatedResponse> => {
     const response = await api.get('/propertyRiskAssessment/list', {params});
-    if (response?.data?.data && Array.isArray(response.data.data)) {
-        return response.data;
-    } else {
-        // Fallback to an empty array if data is not an array
-        return { ...response.data, data: [] };
-    }
+        return response.data.data.data;
 };
 
 const createPropertyRiskAssessment = async (data: PropertyRiskAssessment): Promise<PropertyRiskAssessment> => {

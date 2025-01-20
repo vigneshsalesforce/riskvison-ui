@@ -14,7 +14,7 @@ const PraList: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
      const columns = [
-        { label: 'Name', key: 'Name', isClickable: true },
+        { label: 'Name', key: 'PropertyRiskAssessmentName' , isClickable: true },
       ];
 
 
