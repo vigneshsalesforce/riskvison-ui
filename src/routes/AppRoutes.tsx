@@ -34,6 +34,10 @@ const ViewPra = lazy(() => import("../features/pra/components/PraView"));
 const PraList = lazy(() => import("../features/pra/components/PraList"));
 const PraForm = lazy(() => import("../features/pra/components/PraForm"));
 
+const ViewBsi = lazy(() => import("../features/bsi/components/PraView"));
+const BsiList = lazy(() => import("../features/bsi/components/PraList"));
+const BsiForm = lazy(() => import("../features/bsi/components/PraForm"));
+
 const Actions = lazy(() => import("../pages/Actions"));
 const Users = lazy(() => import("../pages/Users"));
 
@@ -64,6 +68,9 @@ const AppRoutes: React.FC = () => {
           <Route path="/propertyriskassessments" element={<PraList />} />
           <Route path="/propertyriskassessments/create" element={<PraForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
           <Route path="/propertyriskassessment/:praId/view" element={<ViewPra />} />
+          <Route path="/brewerysiteinspections" element={<BsiList />} />
+          <Route path="/brewerysiteinspections/create" element={<BsiForm open={true} onClose={() => {}} mutation={undefined} onSaved={() => {}} />} />
+          <Route path="/brewerysiteinspections/:bsiId/view" element={<ViewBsi />} />
           <Route path="/actions" element={<Actions />} />
           <Route path="/users" element={<Users />} />
           <Route path="/notify" element={<UserNotify />} />

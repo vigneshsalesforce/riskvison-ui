@@ -1,4 +1,3 @@
-//src/components/generic/WizardForm.tsx
 import React, { useState } from "react";
 import {
   Box,
@@ -8,10 +7,12 @@ import {
   Button,
   CircularProgress,
   Typography,
+  Paper,
 } from "@mui/material";
 import WizardDynamicForm from "./WizardDynamicForm";
 import { WizardObjectDefinition } from "../../features/pra/types";
 import { logger } from "../../utils/logger";
+import "./WizardForm.css";
 
 interface WizardFormProps {
   wizardObjectDefinition: WizardObjectDefinition;
@@ -27,23 +28,37 @@ const WizardForm: React.FC<WizardFormProps> = ({
   onCancel,
 }) => {
   const [activeScreen, setActiveScreen] = useState(0);
+  const [activeSection, setActiveSection] = useState(0);
   const [formData, setFormData] = useState<Record<string, any>>(initialValues);
   const [loading, setLoading] = useState(false);
 
   const handleScreenSubmit = (screenData: Record<string, any>) => {
-    // Merge the new screen data with existing form data
     const updatedFormData = {
       ...formData,
       ...screenData,
     };
     setFormData(updatedFormData);
 
-    // If this is the last screen, submit the entire form
     if (activeScreen === wizardObjectDefinition.screens.length - 1) {
       handleFinalSubmit(updatedFormData);
     } else {
-      // Move to next screen
       setActiveScreen((prev) => prev + 1);
+      setActiveSection(0); // Reset section index when moving to next screen
+    }
+  };
+
+  const handleSectionSubmit = (sectionData: Record<string, any>) => {
+    const updatedFormData = {
+      ...formData,
+      ...sectionData,
+    };
+    setFormData(updatedFormData);
+
+    const currentScreen = wizardObjectDefinition.screens[activeScreen];
+    if (activeSection < currentScreen.sections.length - 1) {
+      setActiveSection((prev) => prev + 1);
+    } else {
+      handleScreenSubmit(updatedFormData);
     }
   };
 
@@ -60,104 +75,112 @@ const WizardForm: React.FC<WizardFormProps> = ({
   };
 
   const handlePrevious = () => {
-    setActiveScreen((prev) => prev - 1);
+    if (activeSection > 0) {
+      setActiveSection((prev) => prev - 1);
+    } else if (activeScreen > 0) {
+      setActiveScreen((prev) => prev - 1);
+      const previousScreen = wizardObjectDefinition.screens[activeScreen - 1];
+      setActiveSection(previousScreen.sections.length - 1);
+    }
   };
 
   const isSingleScreen = wizardObjectDefinition.screens.length === 1;
+  const currentScreen = wizardObjectDefinition.screens[activeScreen];
 
-  if (isSingleScreen) {
-    const allFields = wizardObjectDefinition.screens[0].sections.flatMap(
-      (section) => section.fields
-    );
-
+  if (isSingleScreen && currentScreen.sections.length === 1) {
     return (
       <Box>
         <Typography variant="h5" mb={3}>
           {wizardObjectDefinition.label}
         </Typography>
-        {wizardObjectDefinition.screens[0].sections.map((section) => (
-          <Box key={section.name} mb={4}>
-            <Typography variant="h6" mb={2}>
-              {section.name}
-            </Typography>
-            <WizardDynamicForm
-              fields={section.fields}
-              initialValues={formData}
-              onSubmit={handleFinalSubmit}
-              autoSave={false}
-            />
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <WizardDynamicForm
+            fields={currentScreen.sections[0].fields}
+            initialValues={formData}
+            onSubmit={handleFinalSubmit}
+            autoSave={false}
+          />
+          <Box display="flex" justifyContent="space-between" mt={4}>
+            <Button onClick={onCancel} variant="outlined">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleFinalSubmit(formData)}
+              variant="contained"
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={20} /> : "Save"}
+            </Button>
           </Box>
-        ))}
-
-        <Box display="flex" justifyContent="space-between" mt={4}>
-          <Button onClick={onCancel} variant="outlined">
-            Cancel
-          </Button>
-          <Button
-            onClick={() => handleFinalSubmit(formData)}
-            variant="contained"
-            color="primary"
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={20} /> : "Save"}
-          </Button>
-        </Box>
+        </Paper>
       </Box>
     );
   }
 
-  const currentScreen = wizardObjectDefinition.screens[activeScreen];
-  const allFieldsInCurrentScreen = currentScreen.sections.flatMap(
-    (section) => section.fields
-  );
-
   return (
     <Box>
-      <Stepper activeStep={activeScreen} alternativeLabel>
-        {wizardObjectDefinition.screens.map((screen) => (
-          <Step key={screen.name}>
-            <StepLabel>{screen.name}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
+      <Typography variant="h5" mb={3}>
+        {wizardObjectDefinition.label}
+      </Typography>
+      <Paper elevation={3} sx={{ p: 4 }}>
+        {/* Screen-level stepper */}
+        <Stepper activeStep={activeScreen} alternativeLabel sx={{ mb: 4 }}>
+          {wizardObjectDefinition.screens.map((screen) => (
+            <Step key={screen.name}>
+              <StepLabel>{screen.name}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-      <Box mt={4}>
-        {currentScreen.sections.map((section) => (
-          <Box key={section.name} mb={4}>
-            <Typography variant="h6" mb={2}>
-              {section.name}
-            </Typography>
-            <WizardDynamicForm
-              fields={section.fields}
-              initialValues={formData}
-              onSubmit={handleScreenSubmit}
-              autoSave={false}
-            />
-          </Box>
-        ))}
-      </Box>
+        {/* Section-level stepper */}
+        <Stepper activeStep={activeSection} alternativeLabel sx={{ mb: 4 }}>
+          {currentScreen.sections.map((section) => (
+            <Step key={section.name}>
+              <StepLabel>{section.name}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-      <Box display="flex" justifyContent="space-between" mt={4}>
-        <Button
-          onClick={handlePrevious}
-          variant="outlined"
-          disabled={activeScreen === 0}
-        >
-          Previous
-        </Button>
-        <Button
-          onClick={() => handleScreenSubmit(formData)}
-          variant="contained"
-          color="primary"
-          disabled={loading}
-        >
-          {activeScreen < wizardObjectDefinition.screens.length - 1
-            ? "Next"
-            : loading
-            ? <CircularProgress size={20} />
-            : "Save"}
-        </Button>
-      </Box>
+        <Box sx={{ minHeight: "200px", mb: 4 }}>
+          <Typography variant="h6" mb={2}>
+            {currentScreen.sections[activeSection].name}
+          </Typography>
+          <WizardDynamicForm
+            fields={currentScreen.sections[activeSection].fields}
+            initialValues={formData}
+            onSubmit={handleSectionSubmit}
+            autoSave={false}
+          />
+        </Box>
+
+        <Box display="flex" justifyContent="space-between" mt={4}>
+          <Button
+            onClick={handlePrevious}
+            variant="outlined"
+            disabled={activeScreen === 0 && activeSection === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            onClick={() => handleSectionSubmit(formData)}
+            variant="contained"
+            color="primary"
+            disabled={loading}
+          >
+            {activeScreen === wizardObjectDefinition.screens.length - 1 &&
+            activeSection === currentScreen.sections.length - 1 ? (
+              loading ? (
+                <CircularProgress size={20} />
+              ) : (
+                "Save"
+              )
+            ) : (
+              "Next"
+            )}
+          </Button>
+        </Box>
+      </Paper>
     </Box>
   );
 };

@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Locations', to: '/locations', icon: MapPin },
   { name: 'Actions', to: '/actions', icon: ClipboardList },
   { name: 'Property Assessments', to: '/propertyriskassessments', icon: FileCheck },
+  { name: 'Brewery Site Inspctions', to: '/brewerysiteinspections', icon: FileCheck },
 
 ];
 
